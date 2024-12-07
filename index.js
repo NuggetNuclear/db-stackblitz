@@ -42,13 +42,14 @@ app.get('/consulta/jugadores-recientes', async (req, res) => {
 app.get('/consulta/kd-torneo', async (req, res) => {
   try {
     const torneoId = req.query.torneoId;
-    console.log('Recibiendo torneoId:', torneoId); // Debugging
     if (!torneoId) {
       return res.status(400).send('El parámetro "torneoId" es requerido.');
     }
 
     const result = await sql`
-      SELECT jugador.nombre, torneo.nombre, SUM(estadistica.kills) / NULLIF(SUM(estadistica.deaths),0) AS kd_ratio
+      SELECT jugador.nombre AS Nombre_Jugador, 
+             torneo.nombre AS Nombre_Torneo, 
+             SUM(estadistica.kills) / NULLIF(SUM(estadistica.deaths), 0)::FLOAT AS kd_ratio
       FROM estadistica
       JOIN jugador ON estadistica.id_jugador = jugador.id_jugador
       JOIN partida ON estadistica.id_partida = partida.id_partida
@@ -58,24 +59,24 @@ app.get('/consulta/kd-torneo', async (req, res) => {
       ORDER BY kd_ratio DESC
       LIMIT 1;
     `;
-    console.log('Resultado de la consulta K/D:', result); // Debugging
+    console.log('Resultado de la consulta K/D:', result);
+
     if (result.length === 0) {
-      return res.send(
-        'No se encontraron jugadores para el torneo especificado.'
-      );
+      return res.send('No se encontraron jugadores para el torneo especificado.');
     }
 
     const jugador = result[0];
     res.send(
-      `El jugador con la mejor relación K/D en el torneo ${jugador.torneo} es ${
-        jugador.jugador
-      }, con una relación K/D de ${jugador.kd_ratio.toFixed(2)}`
+      `El jugador con la mejor relación K/D en el torneo ${
+        jugador.Nombre_Torneo
+      } es ${jugador.Nombre_Jugador}, con una relación K/D de ${parseFloat(jugador.kd_ratio).toFixed(2)}`
     );
   } catch (error) {
     console.error('Error en /consulta/kd-torneo:', error);
     res.status(500).send('Error al obtener los datos');
   }
 });
+
 
 // ¿Cuántos jugadores hay en un equipo especifico?
 app.get('/consulta/jugadores-equipo', async (req, res) => {
